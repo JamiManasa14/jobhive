@@ -40,6 +40,10 @@ const Signup = () => {
     return errors;
   };
 
+  const changeFileHandler = (e) => {
+    setInput({ ...input, file: e.target.files[0] });
+  };
+
   const changeEventHandler = (e) => {
     const { name, value } = e.target;
     setInput((prevInput) => ({ ...prevInput, [name]: value }));
