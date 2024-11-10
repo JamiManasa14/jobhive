@@ -11,7 +11,6 @@ import { USER_API_END_POINT } from "@/utils/constant";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { setLoading } from "@/redux/authSlice";
-import store from "@/redux/store";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 const Signup = () => {
@@ -25,35 +24,56 @@ const Signup = () => {
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordErrors, setPasswordErrors] = useState([]);
 
   const navigate = useNavigate();
-
   const { loading, user } = useSelector((store) => store.auth);
   const dispatch = useDispatch();
 
-  const changeEventHandler = (e) => {
-    setInput({ ...input, [e.target.name]: e.target.value });
+  const validatePassword = (password) => {
+    const errors = [];
+    if (password.length < 8) errors.push("Password must be at least 8 characters.");
+    if (!/[A-Z]/.test(password)) errors.push("Password must contain an uppercase letter.");
+    if (!/[a-z]/.test(password)) errors.push("Password must contain a lowercase letter.");
+    if (!/[0-9]/.test(password)) errors.push("Password must contain a number.");
+    if (!/[!@#$%^&*]/.test(password)) errors.push("Password must contain a special character.");
+    return errors;
   };
 
-  const changeFileHandler = (e) => {
-    setInput({ ...input, file: e.target.files[0] });
+  const changeEventHandler = (e) => {
+    const { name, value } = e.target;
+    setInput((prevInput) => ({ ...prevInput, [name]: value }));
+
+    // Validate password and update errors
+    if (name === "password") {
+      const errors = validatePassword(value);
+      setPasswordErrors(errors);
+    }
   };
 
   const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword); // Toggle visibility state
+    setShowPassword(!showPassword);
   };
 
   const submitHandler = async (e) => {
     e.preventDefault();
+
+    // Check if password passes validation before submission
+    const passwordValidationErrors = validatePassword(input.password);
+    if (passwordValidationErrors.length > 0) {
+      setPasswordErrors(passwordValidationErrors);
+      toast.error("Password does not meet the requirements.");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("fullname", input.fullname);
     formData.append("email", input.email);
     formData.append("password", input.password);
     formData.append("phoneNumber", input.phoneNumber);
     formData.append("role", input.role);
-    if (input.file) {
-      formData.append("file", input.file);
-    }
+    if (input.file) formData.append("file", input.file);
+
     try {
       dispatch(setLoading(true));
       const res = await axios.post(`${USER_API_END_POINT}/register`, formData, {
@@ -73,11 +93,12 @@ const Signup = () => {
       dispatch(setLoading(false));
     }
   };
-  useEffect(()=>{
-    if(user){
+
+  useEffect(() => {
+    if (user) {
       navigate("/");
     }
-  },[])
+  }, [user]);
 
   return (
     <div>
@@ -124,14 +145,13 @@ const Signup = () => {
             <Label>Password</Label>
             <div className="relative">
               <Input
-                type={showPassword ? "text" : "password"} // Conditionally change input type
+                type={showPassword ? "text" : "password"}
                 value={input.password}
                 name="password"
                 onChange={changeEventHandler}
                 placeholder="Please Enter your Password"
-                className="pr-10" // Add right padding to avoid text overlap with icon
+                className="pr-10"
               />
-              {/* Eye icon for toggling password visibility inside the input */}
               <div
                 className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
                 onClick={togglePasswordVisibility}
@@ -143,6 +163,14 @@ const Signup = () => {
                 )}
               </div>
             </div>
+            {/* Display password validation errors */}
+            {passwordErrors.length > 0 && (
+              <ul className="mt-2 text-red-500 text-sm">
+                {passwordErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            )}
           </div>
           <div className="flex items-center justify-between">
             <RadioGroup className="flex items-center gap-4 my-5">
@@ -183,7 +211,6 @@ const Signup = () => {
           </div>
           {loading ? (
             <Button className="w-full my-4">
-              
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
             </Button>
           ) : (
