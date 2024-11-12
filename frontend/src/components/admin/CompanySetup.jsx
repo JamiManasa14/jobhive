@@ -133,7 +133,7 @@ const CompanySetup = () => {
               />
             </div>
             <div>
-              <Label>Location</Label>
+              <Label>Company Logo</Label>
               <Input
                 type="file"
                 accept="image/*"
